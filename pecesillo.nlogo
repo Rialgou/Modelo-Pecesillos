@@ -60,10 +60,34 @@ end
 
 to go
   nadar
+  if ticks mod 100 = 0
+  [
+  reproducir
+  ]
+  tick
 end
 
 ;;instrucciones
 to reproducir
+  ask peces [
+  let posibles-parejas other peces-here with [sexo != [sexo] of myself and fertil?]
+  if any? posibles-parejas [
+    let pareja one-of posibles-parejas
+    nacer-en-vecindad
+  ]
+]
+end
+
+to nacer-en-vecindad
+  hatch 1 [
+    setxy [xcor] of myself [ycor] of myself
+    set sexo one-of ["macho" "hembra"]
+    set fertil? false
+    set edad 0
+    set shape one-of ["fish" "fish 3"]
+    set saciedad random 10 + 1
+    set comportamiento "presa"
+  ]
 end
 
 to comer
@@ -91,8 +115,7 @@ end
 to crear-farmaco
 end
 
-to nacer
-end
+
 
 
 
@@ -170,7 +193,7 @@ num-peces
 num-peces
 0
 100
-50.0
+51.0
 1
 1
 NIL
