@@ -1,35 +1,49 @@
 ;;razas
 breed [peces pez]
-breed [depredadores depredador]
+;;breed [depredadores depredador]
 breed [farmacos farmaco]
 
 
 ;;propiedades
-peces-own [edad sexo saciedad fertil? infeccion]
-depredadores-own [edad saciedad energia]
+peces-own [edad sexo comportamiento saciedad fertil? infeccion-pez velocidad]
+;;depredadores-own [edad saciedad energia infeccion-dep]
 farmacos-own [concentracion efecto]
-patches-own [contaminado? cantidad]
+patches-own [infeccion-comida cantidad concentracion-activo]
 
 ;;setup
 to setup
   ca
   setup-peces
-  ask patches[set pcolor cyan set cantidad 0]
+  ask patches[set pcolor cyan set cantidad 0 set infeccion-comida 0]
   setup-food
   reset-ticks
 end
 
 to setup-peces
-  create-peces 100
+  create-peces num-peces
   [
     set shape one-of ["fish" "fish 3"]
     set saciedad random 10 + 1
     set xcor random-pxcor
     set ycor random-pycor
+    set sexo one-of ["macho" "hembra"]
     set fertil? one-of [true false]
+    set infeccion-pez 0
+    set comportamiento "presa"
   ]
 end
 
+to setup-depredadores
+  create-peces num-depredadores
+  [
+    set shape one-of ["shark" ]
+    set saciedad random 15 + 5
+    set sexo one-of ["macho" "hembra"]
+    set fertil? one-of [true false]
+    set infeccion-pez 0
+    set comportamiento "depredador"
+  ]
+end
 
 to setup-food
   ask patches[
@@ -64,6 +78,23 @@ to nadar
     fd 1
   ]
 end
+
+to crear-comida
+end
+
+to cazar
+end
+
+to liberar-activo
+end
+
+to crear-farmaco
+end
+
+to nacer
+end
+
+
 
 
 
@@ -129,6 +160,51 @@ NIL
 NIL
 NIL
 1
+
+SLIDER
+28
+137
+200
+170
+num-peces
+num-peces
+0
+100
+50.0
+1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+28
+181
+200
+214
+limite-infeccion
+limite-infeccion
+0
+100
+50.0
+1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+27
+224
+199
+257
+num-depredadores
+num-depredadores
+0
+100
+10.0
+1
+1
+NIL
+HORIZONTAL
 
 @#$#@#$#@
 ## WHAT IS IT?
