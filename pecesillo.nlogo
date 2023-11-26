@@ -1,69 +1,104 @@
 ;;razas
+;;El pez representara al pez chub (Leuciscus cephalus)
 breed [peces pez]
-;;breed [depredadores depredador]
-breed [farmacos farmaco]
-
+breed [compuestos compuesto]
+breed [insectos insecto]
 
 ;;propiedades
-peces-own [edad sexo comportamiento saciedad fertil? infeccion-pez velocidad]
-;;depredadores-own [edad saciedad energia infeccion-dep]
-farmacos-own [concentracion efecto]
-patches-own [infeccion-comida cantidad concentracion-activo]
+peces-own [edad sexo saciedad fertil? contaminacion-pez]
+compuestos-own [concentracion]
+patches-own [contaminacion-comida cantidad concentracion-activo]
+insectos-own [contaminado]
 
 ;;setup
 to setup
   ca
   setup-peces
-  ask patches[set pcolor cyan set cantidad 0 set infeccion-comida 0]
+  ask patches[set pcolor cyan set cantidad 0 set contaminacion-comida 0]
   setup-food
+  setup-insectos
   reset-ticks
 end
 
 to setup-peces
   create-peces num-peces
   [
-    set shape one-of ["fish" "fish 3"]
-    set saciedad random 10 + 1
+    set shape one-of ["fish"]
+    set saciedad random 70 + 1
+    set edad random 11
     set xcor random-pxcor
     set ycor random-pycor
     set sexo one-of ["macho" "hembra"]
-    set fertil? one-of [true false]
-    set infeccion-pez 0
-    set comportamiento "presa"
-  ]
-end
-
-to setup-depredadores
-  create-peces num-depredadores
-  [
-    set shape one-of ["shark" ]
-    set saciedad random 15 + 5
-    set sexo one-of ["macho" "hembra"]
-    set fertil? one-of [true false]
-    set infeccion-pez 0
-    set comportamiento "depredador"
+    set color ifelse-value (sexo = "macho") [blue] [red]
+    ifelse edad > 2 [set fertil? true] [set fertil? false]
+    set contaminacion-pez 0
   ]
 end
 
 to setup-food
-  ask patches[
-    if (distancexy (0.6 * max-pxcor) (- max-pycor)) < 1
-    [set pcolor green set cantidad random 10 + 1 ]
+  ask n-of algas-inicial patches[
+    set pcolor green
+    set cantidad random 10 + 1
+    set contaminacion-comida 0
+  ]
+end
 
-    if (distancexy (-0.6 * max-pxcor) (- max-pycor)) < 1
-    [set pcolor green set cantidad random 10 + 1 ]
+to crear-algas
+  ;; Crear nuevas algas en parches aleatorios
+  ask n-of cantidad-algas-reproducir patches with [pcolor != green] [
+    set pcolor green
+    set cantidad random 10 + 1
+  ]
+end
 
-    if (distancexy (0.6 * max-pxcor) (- max-pycor)) < 1
-    [set pcolor green set cantidad random 10 + 1 ]
+to setup-insectos
+  create-insectos cantidad-insectos
+  [
+    set shape "bug"
+    set xcor random-pxcor
+    set ycor random-pycor
+    set color brown
+  ]
+end
+
+to mover-insectos
+  ask insectos [
+    ;; Mover insectos de forma aleatoria
+    set heading random 360
+    fd 0.5
+  ]
+end
+
+to reproducir-insectos
+  ;; Crear nuevos insectos a partir de insectos existentes con una probabilidad del 30%
+  ask insectos [
+    if random-float 1 < 0.3 [
+      hatch-insectos 1 [
+        set shape "bug"
+        set color brown
+      ]
+    ]
   ]
 end
 
 to go
-  nadar
+  nadar-y-comer
   if ticks mod 100 = 0
   [
-  reproducir
+    reproducir
   ]
+  if ticks mod 50 = 0 [
+    crear-algas
+  ]
+  mover-insectos
+  if ticks mod 50 = 0 [
+    reproducir-insectos
+  ]
+  if ticks mod 150 = 0
+  [
+    cumplir-anos
+  ]
+  morir
   tick
 end
 
@@ -84,16 +119,45 @@ to nacer-en-vecindad
     set sexo one-of ["macho" "hembra"]
     set fertil? false
     set edad 0
-    set shape one-of ["fish" "fish 3"]
-    set saciedad random 10 + 1
-    set comportamiento "presa"
+    set color ifelse-value (sexo = "macho") [blue] [red]
+    set shape one-of ["fish"]
+    set saciedad random 30 + 1
   ]
 end
 
-to comer
+to morir
+  ask peces [
+    ifelse edad > 10 [
+      ;; Si la edad es mayor que 10, hay una probabilidad de morir
+      if random-float 1 < calcular-probabilidad-muerte-edad [ ; Ajusta la función según tus necesidades
+        die
+      ]
+    ][
+      if random-float 1 < calcular-probabilidad-muerte-edad-temprana [ ; Ajusta la función según tus necesidades
+        die
+      ]
+    ]
+  ]
 end
 
-to morir
+to-report calcular-probabilidad-muerte-edad-temprana
+  ;; Esta función calcula la probabilidad de muerte en función de la edad
+  ;; Puedes ajustar la función según tus necesidades
+  let probabilidad-base 0.1 ; Probabilidad base de muerte
+  report probabilidad-base * edad / 100
+end
+
+to-report calcular-probabilidad-muerte-edad
+  ;; Esta función calcula la probabilidad de muerte en función de la edad
+  ;; Puedes ajustar la función según tus necesidades
+  let probabilidad-base 0.1 ; Probabilidad base de muerte
+  report probabilidad-base * edad / 10
+end
+
+to cumplir-anos
+  ask peces[
+    set edad edad + 1
+  ]
 end
 
 to nadar
@@ -106,13 +170,85 @@ end
 to crear-comida
 end
 
-to cazar
-end
-
 to liberar-activo
 end
 
 to crear-farmaco
+end
+
+to nadar-y-comer
+  ask peces [
+    let direccion buscar-alimento
+    show direccion
+    ifelse direccion != nobody [
+      ;; Si se encontró un alimento, dirigirse hacia él y moverse hacia él
+      face direccion
+      fd 1
+
+      ifelse patch-here = direccion and cantidad > 0 [
+        ;; Comer la comida y aumentar la saciedad
+        set saciedad saciedad + 2
+        if saciedad > 100 [set saciedad 100]  ;; Limitar la saciedad a 100
+        set cantidad cantidad - 1  ;; Reducir la cantidad de comida en el parche
+        if cantidad = 0 [
+          ;; Si la cantidad es 0, cambiar el color del parche a cyan
+          set pcolor cyan
+        ]
+      ][
+        ;; Si el pez está en el mismo parche que un insecto
+        let insectos-en-parche insectos-here
+        if any? insectos-en-parche [
+          ;; Comer el insecto y aumentar la saciedad
+          let insect one-of insectos-en-parche
+          ask insect [die]  ;; Eliminar el insecto
+          set saciedad saciedad + 5  ;; Ajusta según tus necesidades
+          if saciedad > 100 [set saciedad 100]
+        ]
+      ]
+    ] [
+      ;; Si no se encontró alimento, dar un movimiento aleatorio
+      mover
+    ]
+  ]
+end
+
+
+
+to-report buscar-alimento
+  let umbral-saciedad 30
+
+  ifelse saciedad < umbral-saciedad [
+    ;; Buscar tanto comida (vegetal) como insectos cuando la saciedad es baja
+    let comida-en-parche one-of patches with [pcolor = green and cantidad > 0] in-radius 10
+    let insecto-en-parche one-of insectos in-radius 10
+
+    ifelse comida-en-parche != nobody [
+    ;; Si hay comida en el parche, retornar el parche
+    report comida-en-parche
+    ] [
+      ;; Si no hay comida en el parche, pero hay un insecto en el parche, retornar el parche
+      ifelse insecto-en-parche != nobody [
+        report insecto-en-parche
+      ] [
+        ;; Si no hay ni comida ni insecto en el parche, retornar nobody
+        report nobody
+      ]
+    ]
+  ][
+    ;; Si la saciedad es suficiente, hay una probabilidad de buscar comida de algas
+    ifelse random-float 1 < 0.5 [
+      let comida-algas one-of patches with [pcolor = green and cantidad > 0] in-radius 10
+      report comida-algas
+    ] [
+      report nobody
+    ]
+  ]
+end
+
+to mover
+  ;; Mover peces de forma aleatoria
+  set heading random 360
+  fd 1
 end
 
 
@@ -193,7 +329,7 @@ num-peces
 num-peces
 0
 100
-51.0
+36.0
 1
 1
 NIL
@@ -201,29 +337,59 @@ HORIZONTAL
 
 SLIDER
 28
-181
+183
 200
-214
-limite-infeccion
-limite-infeccion
-0
-100
-50.0
+216
+algas-inicial
+algas-inicial
+1
+50
+30.0
 1
 1
 NIL
 HORIZONTAL
 
 SLIDER
-27
-224
+25
+227
 199
-257
-num-depredadores
-num-depredadores
+260
+cantidad-algas-reproducir
+cantidad-algas-reproducir
 0
-100
-10.0
+10
+5.0
+1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+26
+272
+198
+305
+cantidad-insectos
+cantidad-insectos
+0
+20
+15.0
+1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+26
+313
+198
+346
+cantidad-insectos-reproducir
+cantidad-insectos-reproducir
+0
+5
+2.0
 1
 1
 NIL
