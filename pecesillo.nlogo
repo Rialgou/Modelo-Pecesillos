@@ -80,17 +80,17 @@ to mover-insectos
   ]
 end
 
-to reproducir-insectos
-  ;; Crear nuevos insectos a partir de insectos existentes con una probabilidad del 60%
-  ask insectos [
-    if random-float 1 < 0.3 [
-      hatch-insectos cantidad-insectos-reproducir [
-        set shape "bug"
-        set color brown
-      ]
-    ]
-  ]
-end
+;to reproducir-insectos
+;  ;; Crear nuevos insectos a partir de insectos existentes con una probabilidad del 60%
+;  ask insectos [
+;    if random-float 1 < 0.3 [
+;      hatch-insectos cantidad-insectos-reproducir [
+;        set shape "bug"
+;        set color brown
+;      ]
+;    ]
+;  ]
+;end
 
 to go
   if ticks mod 100 = 0
@@ -104,7 +104,7 @@ to go
     parar-reproducir
   ]
   if ticks mod 100 = 0 [
-    reproducir-insectos
+    setup-insectos
     morir-insectos
     crear-algas
   ]
@@ -168,7 +168,7 @@ to morir
         die
       ]
     ][
-      if random-float 1 < calcular-probabilidad-muerte-edad-temprana and ticks mod 10 = 0 [
+      if random-float 1 < calcular-probabilidad-muerte-edad-temprana and ticks mod 5 = 0 [
         die
       ]
     ]
@@ -193,7 +193,7 @@ end
 to-report calcular-probabilidad-muerte-edad
   ;; Esta función calcula la probabilidad de muerte en función de la edad
   ;; Puedes ajustar la función según tus necesidades
-  let probabilidad-base 0.1 ; Probabilidad base de muerte
+  let probabilidad-base 0.3 ; Probabilidad base de muerte
   report probabilidad-base * edad / 10
 end
 
@@ -292,7 +292,6 @@ end
 
 
 
-
 @#$#@#$#@
 GRAPHICS-WINDOW
 277
@@ -363,8 +362,8 @@ SLIDER
 num-peces
 num-peces
 0
-100
-12.0
+50
+17.0
 1
 1
 NIL
@@ -394,7 +393,7 @@ cantidad-algas-reproducir
 cantidad-algas-reproducir
 0
 50
-9.0
+12.0
 1
 1
 NIL
@@ -409,22 +408,7 @@ cantidad-insectos
 cantidad-insectos
 0
 50
-24.0
-1
-1
-NIL
-HORIZONTAL
-
-SLIDER
-51
-396
-223
-429
-cantidad-insectos-reproducir
-cantidad-insectos-reproducir
-0
-6
-3.0
+20.0
 1
 1
 NIL
