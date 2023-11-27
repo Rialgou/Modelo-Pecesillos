@@ -1,23 +1,32 @@
 ;;razas
 ;;El pez representara al pez chub (Leuciscus cephalus)
 breed [peces pez]
-breed [compuestos compuesto]
 breed [insectos insecto]
 ;;propiedades
 peces-own [edad sexo saciedad fertil? contaminacion-pez ciclo-reproduccion?]
-compuestos-own [concentracion]
-patches-own [contaminacion-comida cantidad concentracion-activo]
+patches-own [ cantidad concentracion-activo]
 insectos-own [contaminado]
-globals[ciclo? ciclo-cont]
+globals[
+  ciclo?
+  ciclo-cont
+  ticks-entre-propagaciones ; Número de ticks entre propagaciones
+  radio-propagacion ; Radio de propagación del compuesto químico
+  tasa-reduccion ; Tasa de reducción de la concentración
+  umbral-color ; Umbral para cambiar el color del parche a rojo
+]
 ;;setup
 to setup
   ca
   setup-peces
-  ask patches[set pcolor cyan set cantidad 0 set contaminacion-comida 0]
+  ask patches[set pcolor cyan set cantidad 0 ]
   setup-algas
   setup-insectos
   set ciclo? false
   set ciclo-cont 20
+  set ticks-entre-propagaciones 200
+  set radio-propagacion 10
+  set tasa-reduccion 0.01
+  set umbral-color 0.5 ; Puedes ajustar el umbral según tus necesidades
   reset-ticks
 end
 
@@ -41,7 +50,6 @@ to setup-algas
   ask n-of algas-inicial patches[
     set pcolor green
     set cantidad random 20 + 1
-    set contaminacion-comida 0
   ]
 end
 
@@ -80,22 +88,10 @@ to mover-insectos
   ]
 end
 
-;to reproducir-insectos
-;  ;; Crear nuevos insectos a partir de insectos existentes con una probabilidad del 60%
-;  ask insectos [
-;    if random-float 1 < 0.3 [
-;      hatch-insectos cantidad-insectos-reproducir [
-;        set shape "bug"
-;        set color brown
-;      ]
-;    ]
-;  ]
-;end
-
 to go
   if ticks mod 100 = 0
   [
-    cumplir-anos
+    cumplir-años
     reproducir
   ]
   if ciclo? [set ciclo-cont ciclo-cont - 1]
@@ -107,6 +103,11 @@ to go
     setup-insectos
     morir-insectos
     crear-algas
+  ]
+
+  propagar-compuesto
+  if ticks mod 10 = 0[
+    reducir-concentracion
   ]
   mover-insectos
   nadar-y-comer
@@ -197,17 +198,10 @@ to-report calcular-probabilidad-muerte-edad
   report probabilidad-base * edad / 10
 end
 
-to cumplir-anos
+to cumplir-años
   ask peces[
     set edad edad + 1
     if edad > 2 [set fertil? true]
-  ]
-end
-
-to nadar
-  ask peces [
-    set heading random 360
-    fd 1
   ]
 end
 
@@ -288,7 +282,45 @@ to mover
 end
 
 
+to propagar-compuesto
+  if ticks mod ticks-entre-propagaciones = 0 [
+    ;; Cada ciertos ticks, iniciar la propagación del compuesto químico desde un punto aleatorio en la parte superior del río
+    let path-inicial patch random-xcor random-pycor
+    ask path-inicial [
+      ;; Establecer la concentración inicial en el punto de inicio
+      set concentracion-activo 1.0 ; Puedes ajustar la concentración inicial según tus necesidades
+    ]
 
+    ;; Propagar el compuesto químico hacia abajo en el radio especificado
+    ask path-inicial[
+      ask patches in-radius radio-propagacion [
+        ;;Calcular la distancia desde el punto inicial y ajustar la concentración en función de la distancia
+        let distancia distance path-inicial
+        let concentracion-nueva 1.0 - (distancia / radio-propagacion)
+        set concentracion-activo max list 0.0 concentracion-nueva ; Asegurarse de que la concentración no sea negativa
+      ]
+    ]
+    ;; Cambiar el color del parche a rojo si la concentración es mayor que el umbral
+    ask patches[
+      if concentracion-activo > umbral-color [set pcolor red]
+    ]
+  ]
+end
+
+to reducir-concentracion
+  ;; Reducción gradual de la concentración en todos los parches
+  ask patches [
+    set concentracion-activo max list 0.0 concentracion-activo - tasa-reduccion ; Ajusta la tasa de reducción según tus necesidades
+    if concentracion-activo <= 0.5 [
+       ifelse cantidad > 0 [set pcolor green]
+      [set pcolor cyan]
+    ]
+    if concentracion-activo <= 0[
+      ifelse cantidad > 0 [set pcolor green]
+      [set pcolor cyan]
+    ]
+  ]
+end
 
 
 
@@ -393,7 +425,7 @@ cantidad-algas-reproducir
 cantidad-algas-reproducir
 0
 50
-12.0
+16.0
 1
 1
 NIL
