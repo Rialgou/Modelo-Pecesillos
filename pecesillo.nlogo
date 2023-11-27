@@ -3,20 +3,21 @@
 breed [peces pez]
 breed [compuestos compuesto]
 breed [insectos insecto]
-
 ;;propiedades
-peces-own [edad sexo saciedad fertil? contaminacion-pez]
+peces-own [edad sexo saciedad fertil? contaminacion-pez ciclo-reproduccion?]
 compuestos-own [concentracion]
 patches-own [contaminacion-comida cantidad concentracion-activo]
 insectos-own [contaminado]
-
+globals[ciclo? ciclo-cont]
 ;;setup
 to setup
   ca
   setup-peces
   ask patches[set pcolor cyan set cantidad 0 set contaminacion-comida 0]
-  setup-food
+  setup-algas
   setup-insectos
+  set ciclo? false
+  set ciclo-cont 20
   reset-ticks
 end
 
@@ -25,29 +26,39 @@ to setup-peces
   [
     set shape one-of ["fish"]
     set saciedad random 70 + 1
-    set edad random 11
+    set edad random 8
     set xcor random-pxcor
     set ycor random-pycor
     set sexo one-of ["macho" "hembra"]
     set color ifelse-value (sexo = "macho") [blue] [red]
     ifelse edad > 2 [set fertil? true] [set fertil? false]
     set contaminacion-pez 0
+    set ciclo-reproduccion? false
   ]
 end
 
-to setup-food
+to setup-algas
   ask n-of algas-inicial patches[
     set pcolor green
-    set cantidad random 10 + 1
+    set cantidad random 20 + 1
     set contaminacion-comida 0
   ]
 end
 
 to crear-algas
-  ;; Crear nuevas algas en parches aleatorios
-  ask n-of cantidad-algas-reproducir patches with [pcolor != green] [
-    set pcolor green
-    set cantidad random 10 + 1
+  let parches-disponibles patches with [pcolor != green]
+
+  ifelse count parches-disponibles >= cantidad-algas-reproducir [
+    ;; Seleccionar aleatoriamente `cantidad-algas-reproducir` parches
+    ask n-of cantidad-algas-reproducir parches-disponibles [
+      set pcolor green
+      set cantidad random 20 + 1
+    ]
+  ][
+    ask parches-disponibles [
+      set pcolor green
+      set cantidad random 20 + 1
+    ]
   ]
 end
 
@@ -70,10 +81,10 @@ to mover-insectos
 end
 
 to reproducir-insectos
-  ;; Crear nuevos insectos a partir de insectos existentes con una probabilidad del 30%
+  ;; Crear nuevos insectos a partir de insectos existentes con una probabilidad del 60%
   ask insectos [
     if random-float 1 < 0.3 [
-      hatch-insectos 1 [
+      hatch-insectos cantidad-insectos-reproducir [
         set shape "bug"
         set color brown
       ]
@@ -82,39 +93,62 @@ to reproducir-insectos
 end
 
 to go
-  nadar-y-comer
   if ticks mod 100 = 0
   [
+    cumplir-anos
     reproducir
   ]
-  if ticks mod 50 = 0 [
+  if ciclo? [set ciclo-cont ciclo-cont - 1]
+  if ciclo-cont = 0
+  [
+    parar-reproducir
+  ]
+  if ticks mod 100 = 0 [
+    reproducir-insectos
+    morir-insectos
     crear-algas
   ]
   mover-insectos
-  if ticks mod 50 = 0 [
-    reproducir-insectos
-  ]
-  if ticks mod 150 = 0
-  [
-    cumplir-anos
-  ]
+  nadar-y-comer
   morir
   tick
 end
 
 ;;instrucciones
-to reproducir
-  ask peces [
-  let posibles-parejas other peces-here with [sexo != [sexo] of myself and fertil?]
-  if any? posibles-parejas [
-    let pareja one-of posibles-parejas
-    nacer-en-vecindad
+to parar-reproducir
+  ask peces with [fertil? = true] [
+   set ciclo-reproduccion? false
   ]
-]
+  set ciclo? false
+  set ciclo-cont 0
+end
+to reproducir
+  ask peces with [fertil? = true] [
+   set ciclo-reproduccion? true
+  ]
+  set ciclo? true
+  set ciclo-cont 30
+end
+
+to buscar-y-reproducir
+  ask peces with [ciclo-reproduccion? = true and fertil? = true] [
+    let posibles-parejas other peces-here in-radius 5 with [sexo != [sexo] of myself and fertil? = true and ciclo-reproduccion? = true]
+    if any? posibles-parejas [
+      let pareja one-of posibles-parejas
+      ;; Reproducir con la pareja
+      face pareja
+      fd 1
+      ;; Crea un nuevo pez como descendiente y establece propiedades
+      nacer-en-vecindad
+      ask peces with [self = myself or self = pareja] [
+        set ciclo-reproduccion? false
+      ]
+    ]
+  ]
 end
 
 to nacer-en-vecindad
-  hatch 1 [
+  hatch 2 [
     setxy [xcor] of myself [ycor] of myself
     set sexo one-of ["macho" "hembra"]
     set fertil? false
@@ -122,6 +156,7 @@ to nacer-en-vecindad
     set color ifelse-value (sexo = "macho") [blue] [red]
     set shape one-of ["fish"]
     set saciedad random 30 + 1
+    set ciclo-reproduccion? false
   ]
 end
 
@@ -129,17 +164,25 @@ to morir
   ask peces [
     ifelse edad > 10 [
       ;; Si la edad es mayor que 10, hay una probabilidad de morir
-      if random-float 1 < calcular-probabilidad-muerte-edad [ ; Ajusta la función según tus necesidades
+      if random-float 1 < calcular-probabilidad-muerte-edad [
         die
       ]
     ][
-      if random-float 1 < calcular-probabilidad-muerte-edad-temprana [ ; Ajusta la función según tus necesidades
+      if random-float 1 < calcular-probabilidad-muerte-edad-temprana and ticks mod 10 = 0 [
         die
       ]
     ]
+    if saciedad < 1 [die]
   ]
 end
 
+to morir-insectos
+  ask insectos[
+    if random-float 1 < 0.3[ ; Ajusta la función según tus necesidades
+        die
+     ]
+  ]
+end
 to-report calcular-probabilidad-muerte-edad-temprana
   ;; Esta función calcula la probabilidad de muerte en función de la edad
   ;; Puedes ajustar la función según tus necesidades
@@ -157,6 +200,7 @@ end
 to cumplir-anos
   ask peces[
     set edad edad + 1
+    if edad > 2 [set fertil? true]
   ]
 end
 
@@ -167,19 +211,10 @@ to nadar
   ]
 end
 
-to crear-comida
-end
-
-to liberar-activo
-end
-
-to crear-farmaco
-end
-
 to nadar-y-comer
   ask peces [
     let direccion buscar-alimento
-    show direccion
+    ;;show direccion
     ifelse direccion != nobody [
       ;; Si se encontró un alimento, dirigirse hacia él y moverse hacia él
       face direccion
@@ -201,13 +236,14 @@ to nadar-y-comer
           ;; Comer el insecto y aumentar la saciedad
           let insect one-of insectos-en-parche
           ask insect [die]  ;; Eliminar el insecto
-          set saciedad saciedad + 5  ;; Ajusta según tus necesidades
+          set saciedad saciedad + 3  ;; Ajusta según tus necesidades
           if saciedad > 100 [set saciedad 100]
         ]
       ]
     ] [
-      ;; Si no se encontró alimento, dar un movimiento aleatorio
-      mover
+      ifelse ciclo-reproduccion? [ buscar-y-reproducir]
+      ;; Si no se encontró alimento, ni esta en ciclo de reproducción, dar un movimiento aleatorio
+      [mover]
     ]
   ]
 end
@@ -257,7 +293,6 @@ end
 
 
 
-
 @#$#@#$#@
 GRAPHICS-WINDOW
 277
@@ -287,10 +322,10 @@ ticks
 30.0
 
 BUTTON
-83
-53
-146
-86
+52
+136
+225
+169
 setup
 setup
 NIL
@@ -304,10 +339,10 @@ NIL
 1
 
 BUTTON
-83
-96
-146
-129
+53
+178
+225
+212
 go
 go
 T
@@ -321,79 +356,116 @@ NIL
 1
 
 SLIDER
-28
-137
-200
-170
+53
+220
+225
+253
 num-peces
 num-peces
 0
 100
-36.0
+12.0
 1
 1
 NIL
 HORIZONTAL
 
 SLIDER
-28
-183
-200
-216
+53
+266
+225
+299
 algas-inicial
 algas-inicial
 1
+100
+100.0
+1
+1
+NIL
+HORIZONTAL
+
+SLIDER
 50
-30.0
-1
-1
-NIL
-HORIZONTAL
-
-SLIDER
-25
-227
-199
-260
+310
+224
+343
 cantidad-algas-reproducir
 cantidad-algas-reproducir
 0
-10
-5.0
+50
+9.0
 1
 1
 NIL
 HORIZONTAL
 
 SLIDER
-26
-272
-198
-305
+51
+355
+223
+388
 cantidad-insectos
 cantidad-insectos
 0
-20
-15.0
+50
+24.0
 1
 1
 NIL
 HORIZONTAL
 
 SLIDER
-26
-313
-198
-346
+51
+396
+223
+429
 cantidad-insectos-reproducir
 cantidad-insectos-reproducir
 0
-5
-2.0
+6
+3.0
 1
 1
 NIL
 HORIZONTAL
+
+PLOT
+871
+11
+1167
+245
+Cantidad de peces por sexo
+NIL
+NIL
+0.0
+10.0
+0.0
+10.0
+true
+false
+"" ""
+PENS
+"Macho" 1.0 0 -13791810 true "" "plot count peces with [sexo = \"macho\"]"
+"Hembra" 1.0 0 -2674135 true "" "plot count peces with [sexo = \"hembra\"]"
+
+PLOT
+870
+262
+1170
+457
+Cantiad de peces
+NIL
+NIL
+0.0
+10.0
+0.0
+10.0
+true
+false
+"" ""
+PENS
+"default" 1.0 0 -16777216 true "" "plot count peces"
 
 @#$#@#$#@
 ## WHAT IS IT?
