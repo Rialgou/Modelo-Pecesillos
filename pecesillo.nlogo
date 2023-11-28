@@ -10,6 +10,8 @@ globals[
   ciclo?
   ciclo-cont
   umbral-color ; Umbral para cambiar el color del parche a rojo
+  cant-hijos
+  conj-patches
 ]
 ;;setup
 to setup
@@ -43,24 +45,14 @@ end
 to setup-algas
   ask n-of algas-inicial patches[
     set pcolor green
-    set cantidad random 20 + 1
+    set cantidad random 50 + 1
   ]
+  set conj-patches(patch-set [self] of patches)
 end
 
 to crear-algas
-  let parches-disponibles patches with [pcolor != green]
-
-  ifelse count parches-disponibles >= cantidad-algas-reproducir [
-    ;; Seleccionar aleatoriamente `cantidad-algas-reproducir` parches
-    ask n-of cantidad-algas-reproducir parches-disponibles [
-      set pcolor green
-      set cantidad random 20 + 1
-    ]
-  ][
-    ask parches-disponibles [
-      set pcolor green
-      set cantidad random 20 + 1
-    ]
+  ask conj-patches[
+    if pcolor = green [set cantidad cantidad + cantidad-algas-reproducir ]
   ]
 end
 
@@ -83,7 +75,7 @@ to mover-insectos
 end
 
 to go
-  if ticks mod 100 = 0
+  if ticks mod 80 = 0
   [
     cumplir-años
     reproducir
@@ -118,23 +110,24 @@ to parar-reproducir
   set ciclo-cont 0
 end
 to reproducir
+  set cant-hijos 0
   ask peces with [fertil? = true] [
    set ciclo-reproduccion? true
   ]
   set ciclo? true
-  set ciclo-cont 30
+  set ciclo-cont 20
 end
 
 to buscar-y-reproducir
   ask peces with [ciclo-reproduccion? = true and fertil? = true] [
-    let posibles-parejas other peces-here in-radius 5 with [sexo != [sexo] of myself and fertil? = true and ciclo-reproduccion? = true]
+    let posibles-parejas other peces-here in-radius 2 with [sexo != [sexo] of myself and fertil? = true and ciclo-reproduccion? = true]
     if any? posibles-parejas [
       let pareja one-of posibles-parejas
       ;; Reproducir con la pareja
       face pareja
       fd 1
       ;; Crea un nuevo pez como descendiente y establece propiedades
-      nacer-en-vecindad
+      if cant-hijos < 50 [ nacer-en-vecindad ]
       ask peces with [self = myself or self = pareja] [
         set ciclo-reproduccion? false
       ]
@@ -143,7 +136,8 @@ to buscar-y-reproducir
 end
 
 to nacer-en-vecindad
-  hatch random 10 [
+  let hijos random 5
+  hatch hijos [
     setxy [xcor] of myself [ycor] of myself
     set sexo one-of ["macho" "hembra"]
     set fertil? false
@@ -154,6 +148,7 @@ to nacer-en-vecindad
     set ciclo-reproduccion? false
     set pez-contaminado? false
   ]
+  set cant-hijos cant-hijos + hijos
 end
 
 to morir
@@ -248,7 +243,7 @@ to nadar-y-comer
           set color red
         ]
         set pez-contaminado? true
-        if random-float 1 < 0.1 [
+        if random-float 1 < 0.3 [
           set fertil? false
         ]
 
@@ -341,12 +336,11 @@ end
 
 
 
-
 @#$#@#$#@
 GRAPHICS-WINDOW
-277
+276
 10
-833
+832
 567
 -1
 -1
@@ -371,10 +365,10 @@ ticks
 30.0
 
 BUTTON
-52
-136
-225
-169
+0
+10
+173
+43
 setup
 setup
 NIL
@@ -388,10 +382,10 @@ NIL
 1
 
 BUTTON
-53
-178
-225
-212
+1
+52
+173
+86
 go
 go
 T
@@ -405,70 +399,70 @@ NIL
 1
 
 SLIDER
-53
-220
-225
-253
+0
+95
+172
+128
 num-peces
 num-peces
 0
 50
-21.0
+50.0
 1
 1
 NIL
 HORIZONTAL
 
 SLIDER
-53
-266
-225
-299
+0
+134
+172
+167
 algas-inicial
 algas-inicial
 1
 100
-100.0
+41.0
 1
 1
 NIL
 HORIZONTAL
 
 SLIDER
-50
-310
-224
-343
+0
+174
+174
+207
 cantidad-algas-reproducir
 cantidad-algas-reproducir
 0
 50
-16.0
+30.0
 1
 1
 NIL
 HORIZONTAL
 
 SLIDER
-51
-355
-223
-388
+1
+214
+173
+247
 cantidad-insectos
 cantidad-insectos
 0
 50
-20.0
+5.0
 1
 1
 NIL
 HORIZONTAL
 
 PLOT
-871
-11
-1167
-245
+848
+14
+1144
+248
 Cantidad de peces por sexo
 NIL
 NIL
@@ -484,10 +478,10 @@ PENS
 "Hembra" 1.0 0 -2674135 true "" "plot count peces with [sexo = \"hembra\"]"
 
 PLOT
-870
-262
-1170
-457
+847
+265
+1147
+460
 Cantiad de peces
 NIL
 NIL
@@ -502,82 +496,95 @@ PENS
 "default" 1.0 0 -16777216 true "" "plot count peces"
 
 SLIDER
-1181
-16
-1353
-49
+0
+254
+172
+287
 radio-propagacion
 radio-propagacion
 0
 20
-6.0
+9.0
 1
 1
 NIL
 HORIZONTAL
 
 SLIDER
-1181
-57
-1353
-90
+0
+294
+172
+327
 tasa-reduccion
 tasa-reduccion
 0.0
 1.0
-0.025
+0.0
 0.001
 1
 NIL
 HORIZONTAL
 
 SLIDER
-1181
-98
-1354
-131
+0
+335
+173
+368
 ticks-entre-propagaciones
 ticks-entre-propagaciones
 50
 500
-93.0
+50.0
 1
 1
 NIL
 HORIZONTAL
 
 @#$#@#$#@
-## WHAT IS IT?
+## ¿Qué es esto?
 
-(a general understanding of what the model is trying to show or explain)
+Modelo que simula un ecosistema marino compuesto por peces chub, insectos y algas el cual es sometido a focos de residuos quimicos, que pueden generar el fenomeno de
+intersexo en los peces, la finalidad del modelo es simular la supervivencia de la especie bajo estos fenomenos. 
 
-## HOW IT WORKS
+## Como funciona
 
-(what rules the agents use to create the overall behavior of the model)
+Los peces son el principal agente de este modelo, los cuales buscan comida por el entorno, ya sean algas o insectos, tienen su periodo de reproducción y mueren a cierta edad, las zonas de residuos quimicos puede cambiar el sexo de los peces machos, lo cual puede causar problemas para la supervivencia de la especie.
 
-## HOW TO USE IT
+## Como utilizarlo
 
-(how to use the model, including a description of each of the items in the Interface tab)
+Deslizadores 
+num-peces: cantidad inicial de peces
+algas-inicial: cantidad inicial de algas
+cantidad-de-algas-reproducir: cantidad de algas para reabastecer periodicamente
+cantidad-insectos: cantidad inicial de insectos
+radio-propagacion: radio de area de residuos quimicos
+tasa-reduccion: tasa de reduccion de concentracion de residuos quimicos
+ticks-entre-propagaciones: tiempo que pasa entre una y otra propagacion de residuos
+
+Botones
+setup: inicia el modelo con los valores dados de los deslizadores
+go: avanza el tiempo de simulacion del modelo
 
 ## THINGS TO NOTICE
 
 (suggested things for the user to notice while running the model)
 
-## THINGS TO TRY
+## Cosas que intentar
 
-(suggested things for the user to try to do (move sliders, switches, etc.) with the model)
+Parámetros interesantes a probar:
+num-peces: 22
+algas-inicial: 41
+cantidad-algas-reproducir: 30
+cantidad-insectos: 5
+radio-propagacion: 9
+tasa-reduccion: 0.115
+ticks-entre-propagaciones: 50
+
+Con estos parámetros se pudo ver como aumentaban bastante la población,y como en cierto punto, dado la reducción en la población de peces machos, hubo una reducción en la población que los llevó a la extinción.
 
 ## EXTENDING THE MODEL
 
 (suggested things to add or change in the Code tab to make the model more complicated, detailed, accurate, etc.)
-
-## NETLOGO FEATURES
-
-(interesting or unusual features of NetLogo that the model uses, particularly in the Code tab; or where workarounds were needed for missing features)
-
-## RELATED MODELS
-
-(models in the NetLogo Models Library and elsewhere which are of related interest)
 
 ## CREDITS AND REFERENCES
 
