@@ -3,15 +3,12 @@
 breed [peces pez]
 breed [insectos insecto]
 ;;propiedades
-peces-own [edad sexo saciedad fertil? contaminacion-pez ciclo-reproduccion?]
+peces-own [edad sexo saciedad fertil? pez-contaminado? ciclo-reproduccion?]
 patches-own [ cantidad concentracion-activo]
 insectos-own [contaminado]
 globals[
   ciclo?
   ciclo-cont
-  ticks-entre-propagaciones ; Número de ticks entre propagaciones
-  radio-propagacion ; Radio de propagación del compuesto químico
-  tasa-reduccion ; Tasa de reducción de la concentración
   umbral-color ; Umbral para cambiar el color del parche a rojo
 ]
 ;;setup
@@ -22,10 +19,7 @@ to setup
   setup-algas
   setup-insectos
   set ciclo? false
-  set ciclo-cont 20
-  set ticks-entre-propagaciones 200
-  set radio-propagacion 10
-  set tasa-reduccion 0.01
+  set ciclo-cont 30
   set umbral-color 0.5 ; Puedes ajustar el umbral según tus necesidades
   reset-ticks
 end
@@ -41,7 +35,7 @@ to setup-peces
     set sexo one-of ["macho" "hembra"]
     set color ifelse-value (sexo = "macho") [blue] [red]
     ifelse edad > 2 [set fertil? true] [set fertil? false]
-    set contaminacion-pez 0
+    set pez-contaminado? false
     set ciclo-reproduccion? false
   ]
 end
@@ -149,7 +143,7 @@ to buscar-y-reproducir
 end
 
 to nacer-en-vecindad
-  hatch 2 [
+  hatch random 10 [
     setxy [xcor] of myself [ycor] of myself
     set sexo one-of ["macho" "hembra"]
     set fertil? false
@@ -158,18 +152,18 @@ to nacer-en-vecindad
     set shape one-of ["fish"]
     set saciedad random 30 + 1
     set ciclo-reproduccion? false
+    set pez-contaminado? false
   ]
 end
 
 to morir
   ask peces [
     ifelse edad > 10 [
-      ;; Si la edad es mayor que 10, hay una probabilidad de morir
       if random-float 1 < calcular-probabilidad-muerte-edad [
         die
       ]
     ][
-      if random-float 1 < calcular-probabilidad-muerte-edad-temprana and ticks mod 5 = 0 [
+      if random-float 1 < calcular-probabilidad-muerte-edad-temprana and ticks mod 10 = 0 [
         die
       ]
     ]
@@ -239,10 +233,31 @@ to nadar-y-comer
       ;; Si no se encontró alimento, ni esta en ciclo de reproducción, dar un movimiento aleatorio
       [mover]
     ]
+    if not pez-contaminado?[
+      let concentracion-ajustada [concentracion-activo] of patch-here / 1.0 ; Ajustar la concentración al rango de 0 a 1
+
+      ;; Asegurarse de que la concentración ajustada esté en el rango [0, 1]
+      set concentracion-ajustada max list 0 min list 1 concentracion-ajustada
+      let probabilidad-base 0.5
+      let concentracion-patch [concentracion-activo] of patch-here
+      let probabilidad probabilidad-base * concentracion-ajustada
+      if random-float 1 < probabilidad[
+        if sexo = "macho"
+        [
+          set sexo "hembra"
+          set color red
+        ]
+        set pez-contaminado? true
+        if random-float 1 < 0.1 [
+          set fertil? false
+        ]
+
+
+
+      ]
+    ]
   ]
 end
-
-
 
 to-report buscar-alimento
   let umbral-saciedad 30
@@ -315,12 +330,15 @@ to reducir-concentracion
        ifelse cantidad > 0 [set pcolor green]
       [set pcolor cyan]
     ]
-    if concentracion-activo <= 0[
+    if concentracion-activo <= 0.0[
       ifelse cantidad > 0 [set pcolor green]
       [set pcolor cyan]
+      set concentracion-activo 0.0
     ]
   ]
 end
+
+
 
 
 
@@ -395,7 +413,7 @@ num-peces
 num-peces
 0
 50
-17.0
+21.0
 1
 1
 NIL
@@ -482,6 +500,51 @@ false
 "" ""
 PENS
 "default" 1.0 0 -16777216 true "" "plot count peces"
+
+SLIDER
+1181
+16
+1353
+49
+radio-propagacion
+radio-propagacion
+0
+20
+6.0
+1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+1181
+57
+1353
+90
+tasa-reduccion
+tasa-reduccion
+0.0
+1.0
+0.025
+0.001
+1
+NIL
+HORIZONTAL
+
+SLIDER
+1181
+98
+1354
+131
+ticks-entre-propagaciones
+ticks-entre-propagaciones
+50
+500
+93.0
+1
+1
+NIL
+HORIZONTAL
 
 @#$#@#$#@
 ## WHAT IS IT?
