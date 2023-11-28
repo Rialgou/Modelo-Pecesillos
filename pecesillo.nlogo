@@ -335,7 +335,6 @@ end
 
 
 
-
 @#$#@#$#@
 GRAPHICS-WINDOW
 276
@@ -407,7 +406,7 @@ num-peces
 num-peces
 0
 50
-50.0
+22.0
 1
 1
 NIL
@@ -519,7 +518,7 @@ tasa-reduccion
 tasa-reduccion
 0.0
 1.0
-0.0
+0.115
 0.001
 1
 NIL
@@ -542,53 +541,46 @@ HORIZONTAL
 
 @#$#@#$#@
 ## ¿Qué es esto?
+Modelo que simula un ecosistema marino compuesto por peces chub, insectos y algas, el cual es sometido a focos de residuos químicos que pueden generar el fenómeno de intersexo en los peces. La finalidad del modelo es simular la supervivencia de la especie bajo estos fenómenos y generar conciencia sobre la importancia de la ecofarmacovigilancia, la cual se encarga de estudiar el impacto de los desechos de residuos quimicos en el medio ambiente y de buscar mejores formas de deshacerse de ellos. 
 
-Modelo que simula un ecosistema marino compuesto por peces chub, insectos y algas el cual es sometido a focos de residuos quimicos, que pueden generar el fenomeno de
-intersexo en los peces, la finalidad del modelo es simular la supervivencia de la especie bajo estos fenomenos. 
+## Cómo funciona
+Los peces son el principal agente de este modelo, los cuales buscan comida en el entorno, ya sea algas o insectos. Tienen su periodo de reproducción y poseen una esperanza de vida de 10 años, donde es más probable que mueran. Las zonas de residuos químicos pueden cambiar el sexo de los peces machos, lo cual puede causar problemas para la supervivencia de la especie.
 
-## Como funciona
+## Cómo utilizarlo
+### Deslizadores
+- num-peces: cantidad inicial de peces
+- algas-inicial: cantidad inicial de algas
+- cantidad-de-algas-reproducir: cantidad de algas para reabastecer periódicamente
+- cantidad-insectos: cantidad inicial de insectos
+- radio-propagación: radio de área de residuos químicos
+- tasa-reducción: tasa de reducción de concentración de residuos químicos
+- ticks-entre-propagaciones: tiempo que pasa entre una y otra propagación de residuos
 
-Los peces son el principal agente de este modelo, los cuales buscan comida por el entorno, ya sean algas o insectos, tienen su periodo de reproducción y mueren a cierta edad, las zonas de residuos quimicos puede cambiar el sexo de los peces machos, lo cual puede causar problemas para la supervivencia de la especie.
-
-## Como utilizarlo
-
-Deslizadores 
-num-peces: cantidad inicial de peces
-algas-inicial: cantidad inicial de algas
-cantidad-de-algas-reproducir: cantidad de algas para reabastecer periodicamente
-cantidad-insectos: cantidad inicial de insectos
-radio-propagacion: radio de area de residuos quimicos
-tasa-reduccion: tasa de reduccion de concentracion de residuos quimicos
-ticks-entre-propagaciones: tiempo que pasa entre una y otra propagacion de residuos
-
-Botones
-setup: inicia el modelo con los valores dados de los deslizadores
-go: avanza el tiempo de simulacion del modelo
-
-## THINGS TO NOTICE
-
-(suggested things for the user to notice while running the model)
+### Botones
+- setup: inicia el modelo con los valores dados de los deslizadores
+- go: avanza el tiempo de simulación del modelo
 
 ## Cosas que intentar
+### Parámetros interesantes a probar
+- num-peces: 22
+- algas-inicial: 41
+- cantidad-algas-reproducir: 30
+- cantidad-insectos: 5
+- radio-propagación: 9
+- tasa-reducción: 0.115
+- ticks-entre-propagaciones: 50
 
-Parámetros interesantes a probar:
-num-peces: 22
-algas-inicial: 41
-cantidad-algas-reproducir: 30
-cantidad-insectos: 5
-radio-propagacion: 9
-tasa-reduccion: 0.115
-ticks-entre-propagaciones: 50
+Con estos parámetros se pudo ver cómo aumentaba bastante la población y cómo, en cierto punto, debido a la reducción en la población de peces machos, hubo una reducción en la población que los llevó a la extinción.
 
-Con estos parámetros se pudo ver como aumentaban bastante la población,y como en cierto punto, dado la reducción en la población de peces machos, hubo una reducción en la población que los llevó a la extinción.
 
-## EXTENDING THE MODEL
+## Referencias
+- Bahamonde, P. A., Munkittrick, K. R., & Martyniuk, C. J. (Year). Intersex in teleost fish: Are we distinguishing endocrine disruption from natural phenomena?
+- Randak, T., Zlabek, V., Pulkrabova, J., Kolarova, J., Kroupova, H., Siroka, Z., Velisek, J., Svobodova, Z., & Hajslova, J. (2008, November 18). Effects of pollution on chub in the River Elbe, Czech Republic.
 
-(suggested things to add or change in the Code tab to make the model more complicated, detailed, accurate, etc.)
-
-## CREDITS AND REFERENCES
-
-(a reference to the model's URL on the web if it has one, as well as any other necessary credits, citations, and links)
+## Autores
+- Elizabeth Bravo Campos
+- Gustavo González Gutiérrez
+- Richard González Lara
 @#$#@#$#@
 default
 true
