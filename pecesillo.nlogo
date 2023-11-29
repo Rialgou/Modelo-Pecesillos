@@ -12,6 +12,7 @@ globals[
   umbral-color ; Umbral para cambiar el color del parche a rojo
   cant-hijos
   conj-patches
+  edades-peces
 ]
 ;;setup
 to setup
@@ -20,6 +21,7 @@ to setup
   ask patches[set pcolor cyan set cantidad 0 ]
   setup-algas
   setup-insectos
+  set edades-peces []
   set ciclo? false
   set ciclo-cont 30
   set umbral-color 0.5 ; Puedes ajustar el umbral según tus necesidades
@@ -98,6 +100,7 @@ to go
   mover-insectos
   nadar-y-comer
   morir
+  if count peces = 0 [stop]
   tick
 end
 
@@ -188,9 +191,11 @@ to-report calcular-probabilidad-muerte-edad
 end
 
 to cumplir-años
+  set edades-peces []
   ask peces[
     set edad edad + 1
     if edad > 2 [set fertil? true]
+    set edades-peces fput edad edades-peces
   ]
 end
 
@@ -332,7 +337,6 @@ to reducir-concentracion
     ]
   ]
 end
-
 
 
 @#$#@#$#@
@@ -531,13 +535,31 @@ SLIDER
 368
 ticks-entre-propagaciones
 ticks-entre-propagaciones
-50
-500
+0
+240
 50.0
 1
 1
 NIL
 HORIZONTAL
+
+PLOT
+1168
+16
+1459
+289
+Promedio de edad de peces
+NIL
+NIL
+0.0
+10.0
+0.0
+10.0
+true
+false
+"" ""
+PENS
+"edades-promedio" 1.0 0 -13840069 true "" "plot mean edades-peces"
 
 @#$#@#$#@
 ## ¿Qué es esto?
